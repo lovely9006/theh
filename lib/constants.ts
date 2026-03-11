@@ -4,12 +4,6 @@ import type { BoxType, VehicleType } from './types';
 export const LOAD_EFFICIENCY = 0.85;
 
 // ─── 박스 종류 (CBM = L×W×H mm → m³) ─────────────────────────
-// 케이스 검증:
-//   구독박스 200개  = 200 × 0.01444 = 2.888 CBM  (케이스 A)
-//   번치박스  50개  =  50 × 0.00868 = 0.434 CBM  (케이스 B)
-//   큐브박스  30개  =  30 × 0.02880 = 0.864 CBM  (케이스 B)
-//   블록박스  20개  =  20 × 0.04185 = 0.837 CBM  (케이스 B)
-//   블록박스 500개  = 500 × 0.04185 = 20.925 CBM (케이스 C)
 export const BOX_TYPES: BoxType[] = [
   {
     id: 'subscription',
@@ -45,14 +39,42 @@ export const BOX_TYPES: BoxType[] = [
   },
 ];
 
-// ─── 차량 종류 (총 적재 가능 부피, 효율 적용 전) ──────────────
-// 라보  2.21 CBM → 유효 1.879 → 케이스 A: ceil(2.888/1.879) = 2대
-// 2톤  12.65 CBM → 유효 10.753 → 케이스 C: ceil(20.925/10.753) = 2대
+// ─── 차량 종류 (가로×세로×높이 mm → CBM, 효율 적용 전) ─────────
+// | ID | 이름    | 가로 | 세로 | 높이 | CBM   |
+// |  1 | 다마스  | 1100 | 1600 | 1100 | 1.936 |
+// |  2 | 라보    | 1400 | 2200 | 1000 | 3.080 |
+// |  3 | 스타리아| 1600 | 2600 | 1400 | 5.824 |
+// |  4 | 1톤 탑  | 1600 | 2700 | 1700 | 7.344 |
+// |  5 | 1.4톤  | 1600 | 3100 | 1800 | 8.928 |
 export const VEHICLE_TYPES: VehicleType[] = [
-  { id: 'damas',     name: '다마스', cbm: 0.7   },
-  { id: 'labo',      name: '라보',   cbm: 2.21  },
-  { id: 'truck_1t',  name: '1톤',    cbm: 4.5   },
-  { id: 'truck_2t',  name: '2톤',    cbm: 12.65 },
-  { id: 'truck_5t',  name: '5톤',    cbm: 20.0  },
-  { id: 'truck_11t', name: '11톤',   cbm: 42.0  },
+  {
+    id: 'damas',
+    name: '다마스',
+    width: 1100, length: 1600, height: 1100,
+    cbm: (1100 * 1600 * 1100) / 1e9, // 1.936
+  },
+  {
+    id: 'labo',
+    name: '라보',
+    width: 1400, length: 2200, height: 1000,
+    cbm: (1400 * 2200 * 1000) / 1e9, // 3.080
+  },
+  {
+    id: 'starria',
+    name: '스타리아',
+    width: 1600, length: 2600, height: 1400,
+    cbm: (1600 * 2600 * 1400) / 1e9, // 5.824
+  },
+  {
+    id: 'truck_1t',
+    name: '1톤 탑',
+    width: 1600, length: 2700, height: 1700,
+    cbm: (1600 * 2700 * 1700) / 1e9, // 7.344
+  },
+  {
+    id: 'truck_1_4t',
+    name: '1.4톤',
+    width: 1600, length: 3100, height: 1800,
+    cbm: (1600 * 3100 * 1800) / 1e9, // 8.928
+  },
 ];

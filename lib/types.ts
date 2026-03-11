@@ -10,7 +10,10 @@ export interface BoxType {
 export interface VehicleType {
   id: string;
   name: string;
-  cbm: number; // m³ (총 적재 가능 부피)
+  width: number;  // mm (가로)
+  length: number; // mm (세로)
+  height: number; // mm (높이)
+  cbm: number;    // m³ (W×L×H / 1e9, precomputed)
 }
 
 export interface BoxEntry {
