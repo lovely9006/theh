@@ -52,11 +52,14 @@ export function calcVehicles(
 
     if (count === 0) continue;
 
+    // 적재량 계산: 물리 용량 초과 방지
     const totalCapacity = isLast
-      ? count * vehicle.cbm   // 물리 용량 기준
+      ? count * vehicle.cbm   // 물리 용량 기준 (대수 산출용)
       : count * effectiveCBM; // 효율 용량 기준
     const usedCBM = Math.min(remainingCBM, totalCapacity);
-    const loadRate = round2((usedCBM / totalCapacity) * 100); // 적재율%
+
+    // 적재율: 항상 유효 용량(×0.85) 기준, 최대 100% 캡
+    const loadRate = Math.min(round2((usedCBM / (count * effectiveCBM)) * 100), 100);
 
     remainingCBM = Math.max(0, remainingCBM - usedCBM);
 
