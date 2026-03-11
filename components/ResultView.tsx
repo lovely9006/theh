@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 
 interface ResultViewProps {
   result: VehicleCalcResult;
-  onReset: () => void;
 }
 
 function getLoadRateClass(rate: number): string {
@@ -15,7 +14,7 @@ function getLoadRateClass(rate: number): string {
   return 'text-red-600 font-semibold';
 }
 
-export default function ResultView({ result, onReset }: ResultViewProps) {
+export default function ResultView({ result }: ResultViewProps) {
   return (
     <div className="space-y-8">
       {/* 배차 결과 테이블 */}
@@ -60,11 +59,8 @@ export default function ResultView({ result, onReset }: ResultViewProps) {
 
       {/* 버튼 */}
       <div className="flex gap-3">
-        <Button variant="outline" onClick={() => exportToExcel(result)} className="flex-1">
+        <Button variant="outline" onClick={() => exportToExcel(result)}>
           엑셀 저장
-        </Button>
-        <Button variant="secondary" onClick={onReset} className="flex-1">
-          다시 계산
         </Button>
       </div>
     </div>
