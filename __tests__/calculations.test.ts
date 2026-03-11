@@ -100,11 +100,11 @@ describe('calcVehicles', () => {
   it('혼합 배차: 5톤 우선 → 나머지 다마스로 보완', () => {
     // totalCBM = 10
     // 5톤 유효CBM = 17  → floor(10/17) = 0 → 건너뜀
-    // 다마스 유효CBM = 0.595 → ceil(10/0.595) = 17대
+    // 다마스 물리CBM = 0.7 → ceil(10/0.7) = 15대 (물리 용량 기준)
     const result = calcVehicles(10, [truck5t, damas]);
     expect(result.assignments).toHaveLength(1);
     expect(result.assignments[0].vehicle.id).toBe('damas');
-    expect(result.assignments[0].count).toBe(17);
+    expect(result.assignments[0].count).toBe(15);
     expect(result.unassignedCBM).toBe(0);
   });
 

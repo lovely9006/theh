@@ -44,13 +44,17 @@ export function calcVehicles(
 
     if (remainingCBM <= 0) break;
 
+    // 대형 차종: 효율 기준 floor (과잉 배정 방지)
+    // 마지막 차종: 물리 용량 기준 ceil (실제 적재 가능 대수)
     const count = isLast
-      ? Math.ceil(remainingCBM / effectiveCBM)
+      ? Math.ceil(remainingCBM / vehicle.cbm)
       : Math.floor(remainingCBM / effectiveCBM);
 
     if (count === 0) continue;
 
-    const totalCapacity = count * effectiveCBM;
+    const totalCapacity = isLast
+      ? count * vehicle.cbm   // 물리 용량 기준
+      : count * effectiveCBM; // 효율 용량 기준
     const usedCBM = Math.min(remainingCBM, totalCapacity);
     const loadRate = round2((usedCBM / totalCapacity) * 100); // 적재율%
 
