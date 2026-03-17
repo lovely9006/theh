@@ -28,13 +28,14 @@ export function calcTotalCBM(entries: BoxEntry[]): number {
 export function calcVehicles(
   totalCBM: number,
   selectedVehicles: VehicleType[],
+  efficiency: number = LOAD_EFFICIENCY * 100, // 적재율 기준 (%), 기본 85
 ): VehicleCalcResult {
   if (selectedVehicles.length === 0 || totalCBM <= 0) {
     return { assignments: [], totalCBM, totalVehicles: 0, unassignedCBM: round3(totalCBM) };
   }
 
   const candidates: VehicleAssignment[] = selectedVehicles.map(vehicle => {
-    const effectiveCBM = vehicle.cbm * LOAD_EFFICIENCY;
+    const effectiveCBM = vehicle.cbm * (efficiency / 100);
     // 물리 용량에 들어오면 1대, 아니면 유효 용량 기준 ceil
     const count = totalCBM <= vehicle.cbm ? 1 : Math.ceil(totalCBM / effectiveCBM);
     const loadRate = Math.min(round2((totalCBM / (count * effectiveCBM)) * 100), 100);

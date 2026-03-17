@@ -18,6 +18,7 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<Set<string>>(
     new Set(VEHICLE_TYPES.map(v => v.id))
   );
+  const [efficiency, setEfficiency] = useState<number>(85);
   const [error, setError] = useState<string | null>(null);
   const [isCalculating, setIsCalculating] = useState(false);
 
@@ -72,7 +73,7 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
     setError(null);
     setIsCalculating(true);
     const selectedVehicles = VEHICLE_TYPES.filter(v => selectedVehicleIds.has(v.id));
-    onCalculate(calcVehicles(totalCBM, selectedVehicles));
+    onCalculate(calcVehicles(totalCBM, selectedVehicles, efficiency));
     setIsCalculating(false);
   };
 
@@ -178,6 +179,36 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
         {selectedVehicleIds.size > 0 && (
           <p className="mt-2 text-xs text-gray-400">{selectedVehicleIds.size}종 선택됨</p>
         )}
+      </section>
+
+      {/* 적재율 기준 */}
+      <section aria-labelledby="efficiency-title">
+        <div className="flex items-center gap-3">
+          <label id="efficiency-title" htmlFor="efficiency-input" className="text-sm font-semibold text-gray-800 shrink-0">
+            적재율 기준 (%)
+          </label>
+          <div className="flex items-center gap-1.5">
+            <input
+              id="efficiency-input"
+              type="number"
+              inputMode="numeric"
+              min={1}
+              max={100}
+              step={1}
+              value={efficiency}
+              onChange={e => {
+                const v = parseInt(e.target.value, 10);
+                if (!isNaN(v) && v >= 1 && v <= 100) setEfficiency(v);
+              }}
+              className="w-16 text-right border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-blue-400"
+              aria-label="적재율 기준 퍼센트"
+            />
+            <span className="text-sm text-gray-500">%</span>
+          </div>
+          <p className="text-xs text-gray-400">
+            차량 1대의 유효 적재 용량을 물리 용량의 {efficiency}%로 계산합니다.
+          </p>
+        </div>
       </section>
 
       {/* 에러 메시지 */}
