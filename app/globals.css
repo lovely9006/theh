@@ -10,6 +10,32 @@
   }
 }
 
+/* 키보드 포커스 링 */
+:focus-visible {
+  outline: 2px solid oklch(0.5 0.2 250);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+/* 숫자 입력 스피너 제거 */
+input[type='number']::-webkit-inner-spin-button,
+input[type='number']::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type='number'] {
+  -moz-appearance: textfield;
+}
+
+/* 결과 진입 애니메이션 */
+@keyframes result-enter {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.result-enter {
+  animation: result-enter 0.35s ease-out;
+}
+
 @layer base {
   :root {
     --background: oklch(1 0 0);

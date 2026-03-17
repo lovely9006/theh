@@ -18,6 +18,8 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
   const [selectedVehicleIds, setSelectedVehicleIds] = useState<Set<string>>(
     new Set(VEHICLE_TYPES.map(v => v.id))
   );
+  const [error, setError] = useState<string | null>(null);
+  const [isCalculating, setIsCalculating] = useState(false);
 
   // 파생값 — quantities 변경 시에만 재계산
   const entries: BoxEntry[] = useMemo(
@@ -29,7 +31,6 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
     [quantities],
   );
   const totalCBM = useMemo(() => calcTotalCBM(entries), [entries]);
-  const canCalculate = totalCBM > 0 && selectedVehicleIds.size > 0;
 
   const handleQuantityChange = (id: string, raw: string) => {
     const parsed = parseInt(raw, 10);
@@ -37,6 +38,7 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
       ...prev,
       [id]: isNaN(parsed) || parsed < 0 ? 0 : parsed,
     }));
+    setError(null);
   };
 
   const toggleVehicle = (id: string, checked: boolean) => {
@@ -46,64 +48,119 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
       else next.delete(id);
       return next;
     });
+    setError(null);
+  };
+
+  const toggleAll = () => {
+    if (selectedVehicleIds.size === VEHICLE_TYPES.length) {
+      setSelectedVehicleIds(new Set());
+    } else {
+      setSelectedVehicleIds(new Set(VEHICLE_TYPES.map(v => v.id)));
+    }
+    setError(null);
   };
 
   const handleCalculate = () => {
+    if (totalCBM === 0) {
+      setError('박스 수량을 1개 이상 입력해 주세요.');
+      return;
+    }
+    if (selectedVehicleIds.size === 0) {
+      setError('배차에 사용할 차량을 1종류 이상 선택해 주세요.');
+      return;
+    }
+    setError(null);
+    setIsCalculating(true);
     const selectedVehicles = VEHICLE_TYPES.filter(v => selectedVehicleIds.has(v.id));
     onCalculate(calcVehicles(totalCBM, selectedVehicles));
+    setIsCalculating(false);
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-7">
       {/* 섹션 1: 박스 수량 입력 */}
-      <section>
-        <h2 className="text-base font-semibold mb-3">박스 수량 입력</h2>
+      <section aria-labelledby="box-input-title">
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="box-input-title" className="text-sm font-semibold text-gray-800">박스 수량 입력</h2>
+          {totalQuantity > 0 && (
+            <span className="text-xs text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-full tabular-nums">
+              {totalQuantity.toLocaleString()}개 / {totalCBM.toFixed(3)} CBM
+            </span>
+          )}
+        </div>
         <table className="w-full text-sm border-collapse">
           <thead>
-            <tr className="bg-muted text-muted-foreground">
-              <th className="border border-border px-4 py-2 text-left font-medium">박스 종류</th>
-              <th className="border border-border px-4 py-2 text-right font-medium">수량 (개)</th>
-              <th className="border border-border px-4 py-2 text-right font-medium">CBM (m³)</th>
+            <tr className="bg-gray-50 text-gray-500">
+              <th scope="col" className="border border-gray-200 px-4 py-2 text-left font-medium text-xs">박스 종류</th>
+              <th scope="col" className="border border-gray-200 px-4 py-2 text-right font-medium text-xs">수량</th>
+              <th scope="col" className="border border-gray-200 px-4 py-2 text-right font-medium text-xs">소계 CBM</th>
             </tr>
           </thead>
           <tbody>
             {BOX_TYPES.map(box => {
               const qty = quantities[box.id] ?? 0;
               const rowCBM = (box.cbm * qty).toFixed(3);
+              const hasQty = qty > 0;
               return (
-                <tr key={box.id} className="hover:bg-muted/40">
-                  <td className="border border-border px-4 py-2">{box.name}</td>
-                  <td className="border border-border px-4 py-2 text-right">
-                    <input
-                      type="number"
-                      min={0}
-                      max={99999}
-                      step={1}
-                      value={qty === 0 ? '' : qty}
-                      placeholder="0"
-                      onChange={e => handleQuantityChange(box.id, e.target.value)}
-                      className="w-24 text-right bg-transparent outline-none focus:ring-1 focus:ring-ring rounded px-1"
-                    />
+                <tr key={box.id} className={`hover:bg-gray-50 transition-colors ${hasQty ? 'bg-blue-50/40' : ''}`}>
+                  <td className="border border-gray-200 px-4 py-2 text-gray-800">{box.name}</td>
+                  <td className="border border-gray-200 px-3 py-1.5 text-right">
+                    <div className="flex items-center justify-end gap-1">
+                      <input
+                        type="number"
+                        inputMode="numeric"
+                        min={0}
+                        max={99999}
+                        step={1}
+                        value={qty === 0 ? '' : qty}
+                        placeholder="0"
+                        aria-label={`${box.name} 수량`}
+                        onChange={e => handleQuantityChange(box.id, e.target.value)}
+                        className="w-20 text-right bg-transparent outline-none focus:ring-1 focus:ring-blue-400 rounded px-1 py-0.5 tabular-nums"
+                      />
+                      <span className="text-xs text-gray-400 w-3">개</span>
+                      {hasQty && (
+                        <button
+                          type="button"
+                          aria-label={`${box.name} 수량 초기화`}
+                          onClick={() => handleQuantityChange(box.id, '0')}
+                          className="text-gray-300 hover:text-gray-500 transition-colors ml-0.5"
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+                            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+                          </svg>
+                        </button>
+                      )}
+                    </div>
                   </td>
-                  <td className="border border-border px-4 py-2 text-right tabular-nums">
-                    {rowCBM}
+                  <td className="border border-gray-200 px-4 py-2 text-right tabular-nums text-gray-600">
+                    {hasQty ? rowCBM : <span className="text-gray-300">—</span>}
                   </td>
                 </tr>
               );
             })}
             {/* 합계 행 */}
-            <tr className="bg-muted font-semibold">
-              <td className="border border-border px-4 py-2">합계</td>
-              <td className="border border-border px-4 py-2 text-right tabular-nums">{totalQuantity}</td>
-              <td className="border border-border px-4 py-2 text-right tabular-nums">{totalCBM.toFixed(3)}</td>
+            <tr className="bg-gray-100 font-semibold">
+              <td className="border border-gray-200 px-4 py-2 text-xs text-gray-700">합계</td>
+              <td className="border border-gray-200 px-4 py-2 text-right tabular-nums text-xs text-gray-700">{totalQuantity.toLocaleString()}개</td>
+              <td className="border border-gray-200 px-4 py-2 text-right tabular-nums text-xs text-gray-700">{totalCBM.toFixed(3)}</td>
             </tr>
           </tbody>
         </table>
       </section>
 
       {/* 섹션 2: 차량 선택 */}
-      <section>
-        <h2 className="text-base font-semibold mb-3">차량 선택</h2>
+      <section aria-labelledby="vehicle-select-title">
+        <div className="flex items-center justify-between mb-3">
+          <h2 id="vehicle-select-title" className="text-sm font-semibold text-gray-800">차량 선택</h2>
+          <button
+            type="button"
+            onClick={toggleAll}
+            className="text-xs text-blue-600 hover:text-blue-800 underline underline-offset-2"
+          >
+            {selectedVehicleIds.size === VEHICLE_TYPES.length ? '전체 해제' : '전체 선택'}
+          </button>
+        </div>
         <div className="flex flex-wrap gap-3">
           {VEHICLE_TYPES.map(v => (
             <label key={v.id} className="flex items-center gap-2 cursor-pointer select-none">
@@ -111,24 +168,47 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
                 checked={selectedVehicleIds.has(v.id)}
                 onCheckedChange={(checked) => toggleVehicle(v.id, Boolean(checked))}
               />
-              <span className="text-sm">
+              <span className="text-sm text-gray-800">
                 {v.name}
-                <span className="text-muted-foreground ml-1">({v.cbm} m³)</span>
+                <span className="text-gray-400 ml-1">({v.cbm} m³)</span>
               </span>
             </label>
           ))}
         </div>
-        {selectedVehicleIds.size === 0 && (
-          <p className="mt-2 text-xs text-destructive">차량을 하나 이상 선택하세요.</p>
+        {selectedVehicleIds.size > 0 && (
+          <p className="mt-2 text-xs text-gray-400">{selectedVehicleIds.size}종 선택됨</p>
         )}
       </section>
 
-      {/* 섹션 3: 계산 버튼 */}
-      <div>
-        <Button onClick={handleCalculate} disabled={!canCalculate} size="lg" className="w-full">
-          배차 계산
-        </Button>
-      </div>
+      {/* 에러 메시지 */}
+      {error && (
+        <div role="alert" className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" className="shrink-0" aria-hidden="true">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          {error}
+        </div>
+      )}
+
+      {/* 계산 버튼 */}
+      <Button
+        onClick={handleCalculate}
+        disabled={isCalculating}
+        size="lg"
+        className="w-full"
+        aria-busy={isCalculating}
+      >
+        {isCalculating ? (
+          <>
+            <svg className="animate-spin mr-2" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-6.219-8.56"/>
+            </svg>
+            계산 중...
+          </>
+        ) : (
+          '배차 계산하기'
+        )}
+      </Button>
     </div>
   );
 }
