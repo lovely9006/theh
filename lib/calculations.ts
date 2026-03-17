@@ -19,11 +19,11 @@ export function calcTotalCBM(entries: BoxEntry[]): number {
  * 함수 2: 총 CBM + 선택 차종 → 배차 결과
  *
  * 알고리즘:
- *   1) 차종을 CBM 내림차순 정렬 (대형 우선)
- *   2) 각 차종 유효 적재 부피 = CBM × 0.85
- *   3) 대형 차종: floor(잔여CBM ÷ 유효CBM) → 과잉 배정 방지
- *      마지막 차종: ceil(잔여CBM ÷ 유효CBM) → 전량 커버
- *   4) 차종별 { 대수, 적재율%, 잔여CBM } 반환
+ *   1) 각 차종별로 독립적으로 필요 대수 계산
+ *      - totalCBM이 물리 용량 이하 → 1대로 충분
+ *      - 그 외 → ceil(totalCBM ÷ 유효CBM)
+ *   2) 적재율 내림차순 → 대수 오름차순으로 정렬
+ *   3) 가장 앞(최적 차종)이 추천 배차
  */
 export function calcVehicles(
   totalCBM: number,
@@ -33,51 +33,24 @@ export function calcVehicles(
     return { assignments: [], totalCBM, totalVehicles: 0, unassignedCBM: round3(totalCBM) };
   }
 
-  const sorted = [...selectedVehicles].sort((a, b) => b.cbm - a.cbm);
-  const assignments: VehicleAssignment[] = [];
-  let remainingCBM = totalCBM;
+  const candidates: VehicleAssignment[] = selectedVehicles.map(vehicle => {
+    const effectiveCBM = vehicle.cbm * LOAD_EFFICIENCY;
+    // 물리 용량에 들어오면 1대, 아니면 유효 용량 기준 ceil
+    const count = totalCBM <= vehicle.cbm ? 1 : Math.ceil(totalCBM / effectiveCBM);
+    const loadRate = Math.min(round2((totalCBM / (count * effectiveCBM)) * 100), 100);
+    const remainingCBM = round3(count * vehicle.cbm - totalCBM);
+    return { vehicle, count, loadRate, usedCBM: round3(totalCBM), remainingCBM };
+  });
 
-  for (let i = 0; i < sorted.length; i++) {
-    const vehicle = sorted[i];
-    const effectiveCBM = vehicle.cbm * LOAD_EFFICIENCY; // 유효 적재 부피
-    const isLast = i === sorted.length - 1;
-
-    if (remainingCBM <= 0) break;
-
-    // 대형 차종: 효율 기준 floor (과잉 배정 방지)
-    //   단, 잔여 CBM이 물리 용량 이하여서 floor=0이 되어도 실제로는 1대에 실을 수 있으므로
-    //   remainingCBM <= vehicle.cbm 조건이면 최소 1대로 보장
-    // 마지막 차종: 물리 용량 기준 ceil (실제 적재 가능 대수)
-    const count = isLast
-      ? Math.ceil(remainingCBM / vehicle.cbm)
-      : Math.max(Math.floor(remainingCBM / effectiveCBM), remainingCBM <= vehicle.cbm ? 1 : 0);
-
-    if (count === 0) continue;
-
-    // 적재량 계산: 물리 용량 초과 방지
-    const totalCapacity = isLast
-      ? count * vehicle.cbm   // 물리 용량 기준 (대수 산출용)
-      : count * effectiveCBM; // 효율 용량 기준
-    const usedCBM = Math.min(remainingCBM, totalCapacity);
-
-    // 적재율: 항상 유효 용량(×0.85) 기준, 최대 100% 캡
-    const loadRate = Math.min(round2((usedCBM / (count * effectiveCBM)) * 100), 100);
-
-    remainingCBM = Math.max(0, remainingCBM - usedCBM);
-
-    assignments.push({
-      vehicle,
-      count,
-      loadRate,
-      usedCBM: round3(usedCBM),
-      remainingCBM: round3(remainingCBM),
-    });
-  }
+  // 적재율 내림차순, 동률이면 대수 오름차순
+  candidates.sort((a, b) =>
+    b.loadRate !== a.loadRate ? b.loadRate - a.loadRate : a.count - b.count
+  );
 
   return {
-    assignments,
+    assignments: candidates,
     totalCBM,
-    totalVehicles: assignments.reduce((sum, a) => sum + a.count, 0),
-    unassignedCBM: round3(remainingCBM),
+    totalVehicles: candidates[0].count,
+    unassignedCBM: 0,
   };
 }

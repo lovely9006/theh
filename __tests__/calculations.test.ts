@@ -94,27 +94,27 @@ describe('calcVehicles', () => {
     expect(result.unassignedCBM).toBe(0);
   });
 
-  it('혼합 배차: 스타리아 우선 → 나머지 다마스로 보완', () => {
-    // totalCBM = 10
-    // 스타리아 유효 = 5.824×0.85 = 4.9504 → floor(10/4.9504) = 2대, 사용 9.9008, 잔여 0.0992
-    // 다마스 물리 = 1.936 → ceil(0.0992/1.936) = 1대
+  it('최적 차종 선택: 스타리아+다마스 10 CBM → 다마스가 적재율 높아 1순위', () => {
+    // 다마스 유효 = 1.6456 → ceil(10/1.6456) = 7대, loadRate ≈ 86.81%
+    // 스타리아 유효 = 4.9504 → ceil(10/4.9504) = 3대, loadRate ≈ 67.33%
+    // → 다마스가 적재율 높으므로 assignments[0]
     const result = calcVehicles(10, [starria, damas]);
-    expect(result.assignments[0].vehicle.id).toBe('starria');
-    expect(result.assignments[0].count).toBe(2);
-    expect(result.assignments[1].vehicle.id).toBe('damas');
-    expect(result.assignments[1].count).toBe(1);
+    expect(result.assignments[0].vehicle.id).toBe('damas');
+    expect(result.assignments[0].count).toBe(7);
+    expect(result.assignments[1].vehicle.id).toBe('starria');
+    expect(result.assignments[1].count).toBe(3);
     expect(result.unassignedCBM).toBe(0);
   });
 
-  it('혼합 배차: 1톤 탑 + 다마스 → 대형 먼저, 소형 보완', () => {
-    // totalCBM = 8
-    // 1톤 탑 유효 = 7.344×0.85 = 6.2424 → floor(8/6.2424) = 1대, 잔여 1.7576
-    // 다마스 물리 = 1.936 → ceil(1.7576/1.936) = 1대
+  it('최적 차종 선택: 1톤탑+다마스 8 CBM → 다마스가 적재율 높아 1순위', () => {
+    // 다마스 유효 = 1.6456 → ceil(8/1.6456) = 5대, loadRate ≈ 97.23%
+    // 1톤 탑 유효 = 6.2424 → ceil(8/6.2424) = 2대, loadRate ≈ 64.08%
+    // → 다마스가 적재율 높으므로 assignments[0]
     const result = calcVehicles(8, [truck1t, damas]);
-    expect(result.assignments[0].vehicle.id).toBe('truck_1t');
-    expect(result.assignments[0].count).toBe(1);
-    expect(result.assignments[1].vehicle.id).toBe('damas');
-    expect(result.assignments[1].count).toBe(1);
+    expect(result.assignments[0].vehicle.id).toBe('damas');
+    expect(result.assignments[0].count).toBe(5);
+    expect(result.assignments[1].vehicle.id).toBe('truck_1t');
+    expect(result.assignments[1].count).toBe(2);
     expect(result.unassignedCBM).toBe(0);
   });
 
