@@ -45,10 +45,12 @@ export function calcVehicles(
     if (remainingCBM <= 0) break;
 
     // 대형 차종: 효율 기준 floor (과잉 배정 방지)
+    //   단, 잔여 CBM이 물리 용량 이하여서 floor=0이 되어도 실제로는 1대에 실을 수 있으므로
+    //   remainingCBM <= vehicle.cbm 조건이면 최소 1대로 보장
     // 마지막 차종: 물리 용량 기준 ceil (실제 적재 가능 대수)
     const count = isLast
       ? Math.ceil(remainingCBM / vehicle.cbm)
-      : Math.floor(remainingCBM / effectiveCBM);
+      : Math.max(Math.floor(remainingCBM / effectiveCBM), remainingCBM <= vehicle.cbm ? 1 : 0);
 
     if (count === 0) continue;
 

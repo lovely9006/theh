@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { BOX_TYPES, VEHICLE_TYPES } from '@/lib/constants';
 import { calcTotalCBM, calcVehicles } from '@/lib/calculations';
 import type { BoxEntry, VehicleCalcResult } from '@/lib/types';
@@ -19,13 +19,16 @@ export default function OrderInput({ onCalculate }: OrderInputProps) {
     new Set(VEHICLE_TYPES.map(v => v.id))
   );
 
-  // 파생값 — 실시간 계산
-  const entries: BoxEntry[] = BOX_TYPES.map(b => ({
-    boxType: b,
-    quantity: quantities[b.id] ?? 0,
-  }));
-  const totalQuantity = BOX_TYPES.reduce((s, b) => s + (quantities[b.id] ?? 0), 0);
-  const totalCBM = calcTotalCBM(entries);
+  // 파생값 — quantities 변경 시에만 재계산
+  const entries: BoxEntry[] = useMemo(
+    () => BOX_TYPES.map(b => ({ boxType: b, quantity: quantities[b.id] ?? 0 })),
+    [quantities],
+  );
+  const totalQuantity = useMemo(
+    () => BOX_TYPES.reduce((s, b) => s + (quantities[b.id] ?? 0), 0),
+    [quantities],
+  );
+  const totalCBM = useMemo(() => calcTotalCBM(entries), [entries]);
   const canCalculate = totalCBM > 0 && selectedVehicleIds.size > 0;
 
   const handleQuantityChange = (id: string, raw: string) => {

@@ -1,4 +1,3 @@
-import * as XLSX from 'xlsx';
 import type { VehicleCalcResult } from './types';
 
 function datestamp(): string {
@@ -7,7 +6,9 @@ function datestamp(): string {
   return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}_${p(d.getHours())}${p(d.getMinutes())}`;
 }
 
-export function exportToExcel(result: VehicleCalcResult): void {
+export async function exportToExcel(result: VehicleCalcResult): Promise<void> {
+  const XLSX = await import('xlsx');
+
   const header = ['차종', '대수', '적재량(CBM)', '적재율(%)', '여유 공간(CBM)'];
 
   const rows = result.assignments.map(a => [

@@ -59,7 +59,7 @@ export default function ResultView({ result }: ResultViewProps) {
 
       {/* 버튼 */}
       <div className="flex gap-3">
-        <Button variant="outline" onClick={() => exportToExcel(result)}>
+        <Button variant="outline" onClick={() => void exportToExcel(result)}>
           엑셀 저장
         </Button>
       </div>
